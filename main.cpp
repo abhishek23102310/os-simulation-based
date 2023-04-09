@@ -1,89 +1,128 @@
-#include <iostream>
-#include <vector>
-#include <queue>
-
+#include<iostream>
+#include<cstdlib>
 using namespace std;
 
-struct Process {
-    int arrival_time;
-    int cpu_burst_time;
-    int remaining_time;
-    int wait_time;
-};
+// Function to find the waiting time for all processes
+void findWAT(int processes[], int n,
+			int bt[], int wt[], int quantum)
+{
+	// Make a copy of burst times bt[] to store remaining
+	// burst times.
+	int rem_bt[n];
+	for (int i = 0 ; i < n ; i++)
+		rem_bt[i] = bt[i];
 
-void run_round_robin(vector<Process>& processes, int time_slice) {
-    queue<Process> ready_queue;
-    int current_time = 0;
-    int total_wait_time = 0;
-    int total_turnaround_time = 0;
-    int num_completed_processes = 0;
+	int t = 0; // Current time
 
-    while (num_completed_processes < processes.size()) {
-        // Add arriving processes to the ready queue
-        for (int i = 0; i < processes.size(); i++) {
-            if (processes[i].arrival_time <= current_time && processes[i].remaining_time > 0) {
-                ready_queue.push(processes[i]);
-            }
-        }
+	// Keep traversing processes in round robin manner
+	// until all of them are not done.
+	while (1)
+	{
 
-        // Process the next process in the ready queue
-        if (!ready_queue.empty()) {
-            Process current_process = ready_queue.front();
-            ready_queue.pop();
+		bool done = true;
 
-            // Determine how much time the process will run for
-            int time_remaining = current_process.remaining_time;
-            if (time_remaining > time_slice) {
-                time_remaining = time_slice;
-            }
+		// Traverse all processes one by one repeatedly
+		for (int i = 0 ; i < n; i++)
+		{
+			// If burst time of a process is greater than 0
+			// then only need to process further
+			if (rem_bt[i] > 0)
+			{
+				done = false; // There is a pending process
 
-            // Update the wait time for all processes in the ready queue
-            for (int i = 0; i < ready_queue.size(); i++) {
-                Process& p = ready_queue.front();
-                p.wait_time += time_remaining;
-                ready_queue.pop();
-                ready_queue.push(p);
-            }
+				if (rem_bt[i] > quantum)
+				{
+					// Increase the value of t i.e. shows
+					// how much time a process has been processed
+					t += quantum;
 
-            // Update the current process
-            current_process.remaining_time -= time_remaining;
-            current_time += time_remaining;
+					// Decrease the burst_time of current process
+					// by quantum
+					rem_bt[i] -= quantum;
+				}
+else
+				{
+					// Increase the value of t i.e. shows
+					// how much time a process has been processed
+					t = t + rem_bt[i];
 
-            // Check if the process is complete
-            if (current_process.remaining_time == 0) {
-                num_completed_processes++;
-                total_wait_time += current_process.wait_time;
-                total_turnaround_time += current_time - current_process.arrival_time;
-            } else {
-                ready_queue.push(current_process);
-            }
-        } else {
-            current_time++;
-        }
-    }
+					// Waiting time is current time minus time
+					// used by this process
+					wt[i] = t - bt[i];
 
-    // Calculate and output the average wait and turnaround times
-    double avg_wait_time = (double) total_wait_time / processes.size();
-    double avg_turnaround_time = (double) total_turnaround_time / processes.size();
-    cout << "Average wait time: " << avg_wait_time << endl;
-    cout << "Average turnaround time: " << avg_turnaround_time << endl;
+					// As the process gets fully executed
+					// make its remaining burst time = 0
+					rem_bt[i] = 0;
+				}
+			}
+		}
+
+		// If all processes are done
+		if (done == true)
+		break;
+}
 }
 
-int main() {
-    // Generate a set of random processes
-    vector<Process> processes;
-    srand(time(NULL));
-    for (int i = 0; i < 10; i++) {
-        Process p;
-        p.arrival_time = rand() % 100;
-        p.cpu_burst_time = rand() % 10 + 1;
-        p.remaining_time = p.cpu_burst_time;
-        p.wait_time = 0;
-        processes.push_back(p);
-    }
+// Function to calculate turn around time
+void findTAT(int processes[], int n,
+						int bt[], int wt[], int tat[])
+{
+	// calculating turnaround time by adding
+	// bt[i] + wt[i]
+	for (int i = 0; i < n ; i++)
+		tat[i] = bt[i] + wt[i];
+}
 
-    // Run the Round Robin scheduling algorithm with a time slice of 2
-    run_round_robin(processes, 2);
+// Function to calculate average time
+void findavgTime(int processes[], int n, int bt[],
+									int quantum)
+{
+int wt[n], tat[n], total_wt = 0, total_tat = 0;
 
-    return 0;
+	// Function to find waiting time of all processes
+	findWAT(processes, n, bt, wt, quantum);
+
+	// Function to find turn around time for all processes
+	findTAT(processes, n, bt, wt, tat);
+
+	// Display processes along with all details
+	cout << "PN\t "<< " \tBT "
+		<< " \tWT\t " << " \tTAT\n";
+
+	// Calculate total waiting time and total turn
+	// around time
+	for (int i=0; i<n; i++)
+	{
+		total_wt = total_wt + wt[i];
+		total_tat = total_tat + tat[i];
+		cout << " " << i+1 << "\t\t" << bt[i] <<"\t "
+			<< wt[i] <<"\t\t " << tat[i] <<endl;
+	}
+cout << "Average waiting time = "
+		<< (float)total_wt / (float)n;
+	cout << "\nAverage turn around time = "
+		<< (float)total_tat / (float)n;
+}
+
+// main function 
+int main()
+
+{ int z;
+	// process id's
+	int processes[10];
+	for(int k=0;k<10;k++)
+	processes[k]=rand()%100;
+	int n = sizeof processes / sizeof processes[0];
+
+// Burst time of all processes
+	int burst_time[10];
+	for(int j=0;j<10;j++)
+	burst_time[j]=rand()%100;
+
+	// Time quantum
+	cout<<"enter quantum"<<"\n";
+	cin>>z;
+	int quantum =z;
+	findavgTime(processes, n, burst_time, quantum);
+	return 0;
 }
